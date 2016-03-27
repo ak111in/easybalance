@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="Check balance of multiple bitcoin addresses">
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <title>EasyBalance : Check balance of multiple bitcoin addresses</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="bootswatch.min.css">
+
+    <!-- Custom styles for this template -->
+    <link href="starter-template.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="../../assets/js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+	
+	<style>
+	body {
+  padding-top: 0px;
+}
+	</style>
+  </head>
+
+  <body>
+
+
+
+    <div class="container">
+	
+	<div class="page-header" id="">
+        <div class="row">
+          <div class="col-lg-12 col-md-12 col-sm-12 text-center">
+            <h1>Easy Balance</h1>
+            <p class="lead">Check balance of multiple bitcoin addresses</p>
+          </div>
+         </div>
+      </div>
+
+      <h4 class="inputelements">Please enter bitcoin addresses</h4><span class="inputelements">(One address per line)</span>
+	  <textarea class="form-control inputelements" rows="12" id="addresslist"></textarea><br/>
+
+<div class="checkbox inputelements"  >
+                        <label>
+                          <input type="checkbox" id="advancedoptions"> Advanced
+                        </label>
+                      </div>
+<div id="delayoption" style="display:none;" class="inputelements">Delay (seconds) <select  id="delayselect">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                      </select></div>
+<div class="text-center">
+<input type="submit" class="inputelements btn btn-success" value="Get Balance" id="getbalance"></div>
+<div class="text-danger text-center" id="error"></div>
+<h4 class="outputelements" style="display:none;">
+Balance for entered bitcoin addresses<span id="loading"> (loading...)</span>
+</h4>
+<div id="output" class="outputelements" style="display:none;"></div>
+
+    </div><!-- /.container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="bootstrap.min.js"></script>
+	<script src="bootswatch.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+
+
+
+
+<script>
+var checkrequired=0;
+var checkdone=0;
+
+$("#advancedoptions").change(function(){
+$("#delayoption").toggle();
+});
+$("#getbalance").click(function(){
+$("#error").html("");
+var addresslist=$("#addresslist").val();
+var addresses=addresslist.split("\n");
+if(addresses.length==1 && addresses[0]=="")
+	{
+	$("#error").html("Please enter atleast one bitcoin address");
+	return;
+	}
+
+
+
+var i;
+checkrequired=addresses.length;
+var delay=0;
+if($("#advancedoptions").is(":checked"))
+{
+delay=$("#delayselect").val();
+}
+$(".inputelements").hide();
+$(".outputelements").show();
+for (i = 0; i < addresses.length; i++) {
+var address=addresses[i];
+var url="https://blockchain.info/q/addressbalance/"+address;
+    /*
+	if(delay>0) {
+		setTimeout(function(){
+			getbalance(0,url,address);
+		}, delay*1000*i);
+	*/	
+	var turl=url;var ti=i;var taddress=address;
+	var tdelay=delay;
+	if(delay>0) {
+	setTimeout(function(s,t,u) {  
+                 return function() { getbalance(s,t,u) } }(0,turl,taddress),tdelay*1000*ti);
+	
+	
+		
+		
+	}
+	else
+	{
+	getbalance(0,url,addresses[i]);
+	}
+    
+		
+	
+
+} 
+
+function getbalance(count,url,address)
+{
+var jqxhr = $.get( url, function(data) {
+	var displaydata=data;
+	if(count==0)
+	{
+	displaydata=data/100000000;
+	}
+	if(count==1)
+	{
+	displaydata=data.data.balance;
+	}
+	if(count==2)
+	{
+	displaydata=data.data.balance;
+	}
+	  $("#output").html($("#output").html()+address+" = "+displaydata+" BTC<br/>");
+	})
+	  .fail(function() {
+		
+		if(count==0)
+		{
+		checkrequired++;
+		var url1="http://btc.blockr.io/api/v1/address/balance/"+address;
+		getbalance(1,url1,address);
+		}
+		if(count==1)
+		{
+		checkrequired++;
+		var url2="https://api.biteasy.com/blockchain/v1/addresses/"+address;
+		getbalance(2,url2,address);
+		}
+		if(count==2)
+		{
+		$("#output").html($("#output").html()+address+" = "+" Error<br/>");
+		}
+		
+	  })
+	  .always(function() {
+	 
+	  checkdone++;
+	  if(checkdone==checkrequired)
+		{
+		//alert( "finished" );
+		$("#loading").hide();
+		}
+		 
+  });
+}		 
+
+
+});
+</script>
+<br/>
+<br/>
+<br/>
+<center><a href="http://www.easycounter.com/">
+<img src="http://www.easycounter.com/counter.php?ak111in,easybalance"
+border="0" alt="HTML Hit Counter"></a>
+<br>
+</center>
+
+</body>
+</html>
